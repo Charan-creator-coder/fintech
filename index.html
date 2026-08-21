@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlexiRepay — Loans that flex with your income</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  * { font-family: 'Inter', sans-serif; }
+  body { background: #0B0D0C; }
+  .num { font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .card { background: #161917; border: 1px solid #242825; }
+  .card-shadow { box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 20px 48px -20px rgba(0,0,0,0.6); }
+  .accent { color: #34D8B8; }
+  .bg-accent { background-color: #1FA98A; }
+  .amber { color: #F5B75C; }
+  .bg-amber-soft { background-color: rgba(245,183,92,0.12); }
+  .bg-accent-soft { background-color: rgba(52,216,184,0.10); }
+  .sub { color: #8A9591; }
+  .muted { color: #58625E; }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    height: 8px;
+    border-radius: 999px;
+    background: linear-gradient(to right, #34D8B8 var(--fill, 50%), #262B28 var(--fill, 50%));
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: #161917;
+    border: 3px solid #34D8B8;
+    box-shadow: 0 0 0 6px rgba(52,216,184,0.15), 0 2px 10px rgba(0,0,0,0.5);
+    cursor: pointer;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: #161917;
+    border: 3px solid #34D8B8;
+    cursor: pointer;
+  }
+
+  .payout-transition { transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+  .badge-pop { animation: pop 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
+  @keyframes pop {
+    0% { opacity: 0; transform: scale(0.85) translateY(4px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .today-dot { animation: pulse 1.8s ease-in-out infinite; }
+  @keyframes pulse {
+    0%, 100% { r: 6; opacity: 1; }
+    50% { r: 9; opacity: 0.55; }
+  }
+</style>
+</head>
+<body class="min-h-screen text-[#EDEFED]">
+
+<div class="max-w-3xl mx-auto px-5 py-10 sm:py-14">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-8">
+    <div class="flex items-center gap-2.5">
+      <div class="w-9 h-9 rounded-xl bg-accent flex items-center justify-center">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 17L9 11L13 15L21 7" stroke="#0B0D0C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 7H21V13" stroke="#0B0D0C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <span class="text-lg font-extrabold tracking-tight">FlexiRepay</span>
+    </div>
+    <div class="text-xs sub">Income Volatility Loan Engine</div>
+  </div>
+
+  <!-- Persona toggle -->
+  <div class="flex gap-2 mb-6">
+    <button onclick="setPersona('driver')" id="btn-driver" class="persona-btn text-sm font-semibold px-4 py-2 rounded-full border-2 transition-colors"></button>
+    <button onclick="setPersona('seasonal')" id="btn-seasonal" class="persona-btn text-sm font-semibold px-4 py-2 rounded-full border-2 transition-colors"></button>
+  </div>
+
+  <!-- Main card -->
+  <div class="card rounded-3xl card-shadow p-6 sm:p-8 relative">
+
+    <!-- Verified badge -->
+    <div class="absolute top-6 right-6 sm:top-8 sm:right-8 flex items-center gap-1.5 bg-accent-soft accent text-xs font-semibold px-3 py-1.5 rounded-full">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M9 12L11 14L15 10" stroke="#34D8B8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="#34D8B8" stroke-width="2"/></svg>
+      Income Verified
+    </div>
+
+    <div class="text-sm font-semibold sub mb-1">This month's income</div>
+    <div class="text-2xl font-bold mb-5 num" id="income-label">₹10,000</div>
+
+    <input type="range" id="income-slider" min="5000" max="45000" step="500" value="10000" class="w-full mb-8">
+    <div class="flex justify-between text-xs muted -mt-6 mb-8">
+      <span>₹5,000</span>
+      <span>₹45,000</span>
+    </div>
+
+    <!-- Payment card -->
+    <div class="rounded-2xl p-6 sm:p-7" style="background:#0F1210;">
+      <div class="text-sm font-semibold sub mb-1">Your payment this month</div>
+      <div class="text-5xl sm:text-6xl font-black payout-transition num accent" id="payment-amount">₹2,500</div>
+      <div class="text-sm sub mt-2" id="why-line">Scaled to 25% of this month's income.</div>
+
+      <div class="mt-4 min-h-[32px]" id="badge-slot"></div>
+    </div>
+
+    <!-- What-if comparison -->
+    <div class="mt-6 grid grid-cols-2 gap-3">
+      <div class="rounded-xl p-4" style="border:1px solid #262B28;">
+        <div class="text-xs font-semibold muted mb-1">Traditional loan</div>
+        <div class="text-lg font-bold num" style="color:#E8836F" id="traditional-amount">₹10,000</div>
+        <div class="text-xs mt-0.5" style="color:#E8836F" id="traditional-penalty">+ ₹200 late fee</div>
+      </div>
+      <div class="rounded-xl bg-accent-soft p-4" style="border:1.5px solid #1FA98A;">
+        <div class="text-xs font-semibold accent mb-1">FlexiRepay</div>
+        <div class="text-lg font-bold accent num" id="flexi-amount">₹2,500</div>
+        <div class="text-xs accent mt-0.5">No penalty, ever</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart -->
+  <div class="card rounded-3xl card-shadow p-6 sm:p-8 mt-5">
+    <div class="flex items-center justify-between mb-1">
+      <div class="text-sm font-semibold sub">6-month history</div>
+      <div class="flex items-center gap-4 text-xs sub">
+        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full inline-block" style="background:#34D8B8"></span>Income</span>
+        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full inline-block" style="background:#F5B75C"></span>Payment</span>
+      </div>
+    </div>
+    <svg id="chart" viewBox="0 0 600 220" class="w-full mt-4"></svg>
+  </div>
+
+  <div class="text-center text-xs muted mt-6">
+    Total interest is capped at 8% of principal, no matter how repayment is scheduled — it never compounds.
+  </div>
+
+</div>
+
+<script>
+  // ---- Locked formula ----
+  const BASE_EMI = 10000;
+  const FLEX_RATE = 0.25;
+  const MIN_PAYMENT = 1500;
+  const clamp = (x, min, max) => Math.max(min, Math.min(x, max));
+  const paymentFor = (income) => clamp(FLEX_RATE * income, MIN_PAYMENT, BASE_EMI);
+
+  const personas = {
+    driver: {
+      label: "🚗 Delivery Driver",
+      history: [32000, 18000, 9000, 27000, 35000],
+      defaultIncome: 10000
+    },
+    seasonal: {
+      label: "🌾 Seasonal Worker",
+      history: [38000, 30000, 8000, 6000, 15000],
+      defaultIncome: 22000
+    }
+  };
+  let currentPersona = 'driver';
+
+  const fmt = (n) => '₹' + Math.round(n).toLocaleString('en-IN');
+
+  function setPersona(key) {
+    currentPersona = key;
+    document.getElementById('income-slider').value = personas[key].defaultIncome;
+    ['driver','seasonal'].forEach(k => {
+      const btn = document.getElementById('btn-' + k);
+      btn.textContent = personas[k].label;
+      if (k === key) {
+        btn.className = "persona-btn text-sm font-semibold px-4 py-2 rounded-full border-2 transition-colors accent";
+        btn.style.borderColor = "#1FA98A";
+        btn.style.background = "rgba(52,216,184,0.10)";
+      } else {
+        btn.className = "persona-btn text-sm font-semibold px-4 py-2 rounded-full border-2 transition-colors sub";
+        btn.style.borderColor = "#262B28";
+        btn.style.background = "transparent";
+      }
+    });
+    update();
+  }
+
+  function update() {
+    const slider = document.getElementById('income-slider');
+    const income = parseInt(slider.value);
+    const pct = (income - slider.min) / (slider.max - slider.min) * 100;
+    slider.style.setProperty('--fill', pct + '%');
+
+    const payment = paymentFor(income);
+    document.getElementById('income-label').textContent = fmt(income);
+    document.getElementById('payment-amount').textContent = fmt(payment);
+    document.getElementById('flexi-amount').textContent = fmt(payment);
+
+    const whyEl = document.getElementById('why-line');
+    const badgeSlot = document.getElementById('badge-slot');
+    let why, badgeHtml = '';
+
+    if (payment <= MIN_PAYMENT + 0.5) {
+      why = "Lower because your income dropped this month — no penalty applied.";
+      badgeHtml = `<span class="badge-pop inline-flex items-center gap-1.5 bg-accent-soft accent text-xs font-semibold px-3 py-1.5 rounded-full">✓ No late fee applied</span>`;
+    } else if (payment >= BASE_EMI - 0.5) {
+      why = "You're earning well — payment capped at your normal EMI, so you're paying off faster.";
+      badgeHtml = `<span class="badge-pop inline-flex items-center gap-1.5 bg-amber-soft amber text-xs font-semibold px-3 py-1.5 rounded-full">⚡ Catching up faster</span>`;
+    } else {
+      why = "Payment scaled to 25% of this month's income.";
+    }
+    whyEl.textContent = why;
+    badgeSlot.innerHTML = badgeHtml;
+
+    document.getElementById('traditional-amount').textContent = fmt(BASE_EMI);
+    const penaltyEl = document.getElementById('traditional-penalty');
+    if (income < BASE_EMI / FLEX_RATE) {
+      penaltyEl.textContent = '+ ' + fmt(BASE_EMI * 0.02) + ' late fee';
+      penaltyEl.classList.remove('hidden');
+    } else {
+      penaltyEl.textContent = 'Fixed, no matter what';
+    }
+
+    drawChart(income, payment);
+  }
+
+  function drawChart(currentIncome, currentPayment) {
+    const hist = personas[currentPersona].history;
+    const incomes = [...hist, currentIncome];
+    const payments = incomes.map(paymentFor);
+
+    const w = 600, h = 220, padL = 34, padR = 10, padT = 14, padB = 26;
+    const maxVal = Math.max(...incomes, BASE_EMI) * 1.1;
+    const x = (i) => padL + (i / (incomes.length - 1)) * (w - padL - padR);
+    const y = (v) => padT + (1 - v / maxVal) * (h - padT - padB);
+
+    const linePath = (arr) => arr.map((v,i) => (i===0?'M':'L') + x(i).toFixed(1) + ' ' + y(v).toFixed(1)).join(' ');
+
+    const months = ['M1','M2','M3','M4','M5','Now'];
+    let gridLines = '';
+    for (let g = 0; g <= 2; g++) {
+      const gv = maxVal * g / 2;
+      gridLines += `<line x1="${padL}" y1="${y(gv)}" x2="${w-padR}" y2="${y(gv)}" stroke="#20241F" stroke-width="1"/>`;
+    }
+
+    let labels = '';
+    months.forEach((m,i) => {
+      labels += `<text x="${x(i)}" y="${h-6}" font-size="11" fill="#58625E" text-anchor="middle">${m}</text>`;
+    });
+
+    const svg = `
+      ${gridLines}
+      <path d="${linePath(incomes)}" fill="none" stroke="#34D8B8" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="${linePath(payments)}" fill="none" stroke="#F5B75C" stroke-width="2.5" stroke-linejoin="round"/>
+      ${incomes.map((v,i) => `<circle cx="${x(i)}" cy="${y(v)}" r="4" fill="#34D8B8"/>`).join('')}
+      ${payments.map((v,i) => `<circle cx="${x(i)}" cy="${y(v)}" r="4" fill="#F5B75C"/>`).join('')}
+      <circle class="today-dot" cx="${x(incomes.length-1)}" cy="${y(currentIncome)}" r="6" fill="#34D8B8" opacity="0.9"/>
+      ${labels}
+    `;
+    document.getElementById('chart').innerHTML = svg;
+  }
+
+  document.getElementById('income-slider').addEventListener('input', update);
+  setPersona('driver');
+</script>
+</body>
+</html>
