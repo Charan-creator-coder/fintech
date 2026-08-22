@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlexiRepay — AI Income Volatility Loan Engine</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            obsidian: '#070908',
+            surface: '#0E1210',
+            cardBg: 'rgba(22, 25, 23, 0.7)',
+            neonTeal: '#34D8B8',
+            neonTealDark: '#1FA98A',
+            amberGold: '#F5B75C',
+            crimsonRisk: '#E8836F',
+            borderGlass: 'rgba(255, 255, 255, 0.08)',
+            mutedText: '#8A9591',
+            darkBorder: '#1F2623'
+          },
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* CSS RESETS & CUSTOM GLASS PHYSICS */
+    * {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #070908;
+      color: #EDEFED;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .num-mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Ambient Mesh Gradient Blur Animations */
+    .ambient-glow-1 {
+      position: fixed;
+      top: -10%;
+      left: -10%;
+      width: 50vw;
+      height: 50vw;
+      background: radial-gradient(circle, rgba(52, 216, 184, 0.08) 0%, rgba(7, 9, 8, 0) 70%);
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+      animation: floatGlow1 18s ease-in-out infinite alternate;
+    }
+
+    .ambient-glow-2 {
+      position: fixed;
+      bottom: -10%;
+      right: -10%;
+      width: 50vw;
+      height: 50vw;
+      background: radial-gradient(circle, rgba(245, 183, 92, 0.06) 0%, rgba(7, 9, 8, 0) 70%);
+      filter: blur(90px);
+      pointer-events: none;
+      z-index: 0;
+      animation: floatGlow2 22s ease-in-out infinite alternate;
+    }
+
+    @keyframes floatGlow1 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(80px, 60px) scale(1.15); }
+    }
+
+    @keyframes floatGlow2 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(-60px, -80px) scale(1.1); }
+    }
+
+    /* Glassmorphism Card Container */
+    .glass-card {
+      background: rgba(22, 25, 23, 0.7);
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12), 0 12px 32px 0 rgba(0, 0, 0, 0.5);
+      transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+    }
+
+    .glass-card:hover {
+      border-color: rgba(52, 216, 184, 0.22);
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.18), 0 16px 40px 0 rgba(0, 0, 0, 0.65), 0 0 20px 0 rgba(52, 216, 184, 0.05);
+    }
+
+    .glass-input {
+      background: rgba(14, 18, 16, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(8px);
+      transition: all 0.2s ease;
+    }
+
+    .glass-input:focus {
+      border-color: #34D8B8;
+      box-shadow: 0 0 0 3px rgba(52, 216, 184, 0.15);
+      outline: none;
+    }
+
+    /* Range Slider Styling */
+    input[type=range] {
+      -webkit-appearance: none;
+      height: 8px;
+      border-radius: 999px;
+      background: linear-gradient(to right, #34D8B8 var(--slider-fill, 50%), #1F2623 var(--slider-fill, 50%));
+      outline: none;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #0E1210;
+      border: 3px solid #34D8B8;
+      box-shadow: 0 0 14px rgba(52, 216, 184, 0.6), 0 2px 8px rgba(0,0,0,0.8);
+      cursor: pointer;
+      transition: transform 0.15s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.15s ease;
+    }
+
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+      box-shadow: 0 0 22px rgba(52, 216, 184, 0.9), 0 2px 12px rgba(0,0,0,0.9);
+    }
+
+    /* Spring Elasticity Keyframe Animations */
+    .badge-elastic {
+      animation: springIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    @keyframes springIn {
+      0% { opacity: 0; transform: scale(0.8) translateY(6px); }
+      70% { transform: scale(1.04) translateY(-2px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .pulse-dot {
+      animation: pulseGlow 1.8s ease-in-out infinite;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 6px #34D8B8); }
+      50% { opacity: 0.4; transform: scale(0.85); filter: drop-shadow(0 0 2px #34D8B8); }
+    }
+
+    /* SPA Page Visibility Transitions */
+    .app-page {
+      transition: opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1), transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .app-page-hidden {
+      display: none !important;
+      opacity: 0;
+      transform: translateY(14px);
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #070908; }
+    ::-webkit-scrollbar-thumb { background: #1F2623; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #34D8B8; }
+  </style>
+</head>
+<body class="relative z-10 flex flex-col justify-between">
+
+  <!-- Ambient Glow Background Canvas -->
+  <div class="ambient-glow-1"></div>
+  <div class="ambient-glow-2"></div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast-container" class="fixed top-6 right-6 z-50 flex flex-col gap-3 pointer-events-none max-w-sm w-full px-4"></div>
+
+  <!-- PAGE 1: FULL-SCREEN COVER & LOGIN PORTAL -->
+  <div id="page-login" class="app-page fixed inset-0 z-50 flex items-center justify-center p-4 bg-obsidian/95 backdrop-blur-2xl">
+    <div class="glass-card rounded-3xl p-8 max-w-md w-full border border-white/10 relative overflow-hidden shadow-2xl">
+      <div class="absolute -top-16 -right-16 w-36 h-36 bg-neonTeal/10 rounded-full blur-2xl pointer-events-none"></div>
+
+      <!-- Brand Identity -->
+      <div class="flex items-center gap-3.5 mb-8">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-neonTeal to-neonTealDark flex items-center justify-center shadow-lg shadow-neonTeal/20">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+            <path d="M3 17L9 11L13 15L21 7" stroke="#070908" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M15 7H21V13" stroke="#070908" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-2xl font-extrabold tracking-tight text-white">FlexiRepay</h1>
+          <p class="text-xs text-mutedText font-medium">AI Income Volatility Engine</p>
+        </div>
+      </div>
+
+      <!-- Form Inputs -->
+      <form onsubmit="handleLoginSubmit(event)" class="space-y-5">
+        <div>
+          <label class="text-xs font-semibold text-mutedText block mb-2">Select Partner Bank API</label>
+          <div class="grid grid-cols-2 gap-3">
+            <button type="button" onclick="selectBankPortal('HDFC')" id="portal-btn-hdfc" class="py-3 px-3 rounded-xl border border-neonTeal bg-neonTeal/10 text-xs font-bold text-neonTeal text-center transition-all shadow-sm">
+              🏦 HDFC Bank
+            </button>
+            <button type="button" onclick="selectBankPortal('SBI')" id="portal-btn-sbi" class="py-3 px-3 rounded-xl border border-white/10 bg-transparent text-xs font-bold text-mutedText text-center transition-all hover:border-white/20">
+              🏛️ State Bank of India
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs font-semibold text-mutedText block mb-1.5">Borrower Handle</label>
+          <input type="text" id="login-username" value="Alex" placeholder="Enter handle" required
+            class="glass-input w-full rounded-xl px-4 py-3 text-sm font-semibold text-white focus:outline-none">
+        </div>
+
+        <div>
+          <label class="text-xs font-semibold text-mutedText block mb-1.5">Security Code</label>
+          <input type="password" id="login-password" value="1234" placeholder="••••••••" required
+            class="glass-input w-full rounded-xl px-4 py-3 text-sm font-semibold text-white focus:outline-none">
+        </div>
+
+        <button type="submit" class="w-full mt-2 bg-gradient-to-r from-neonTeal to-neonTealDark text-obsidian font-black text-sm py-3.5 rounded-xl hover:opacity-95 transition-all shadow-lg shadow-neonTeal/20 active:scale-[0.99]">
+          Unlock Secure Dashboard →
+        </button>
+      </form>
+
+      <div class="mt-6 pt-4 border-t border-white/5 text-center">
+        <span class="text-[11px] font-mono text-mutedText">PROTECTED BY 256-BIT OPEN BANKING API</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APP WRAPPER (HIDDEN UNTIL LOGIN) -->
+  <div id="main-app" class="max-w-6xl mx-auto px-4 py-6 w-full hidden">
+
+    <!-- GLOBAL HEADER -->
+    <header class="glass-card p-4 rounded-2xl mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3.5">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-neonTeal to-neonTealDark flex items-center justify-center shadow-md shadow-neonTeal/20">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M3 17L9 11L13 15L21 7" stroke="#070908" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M15 7H21V13" stroke="#070908" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-lg font-black tracking-tight text-white">FlexiRepay</span>
+            <span id="header-bank-badge" class="text-[10px] bg-neonTeal/10 text-neonTeal font-bold px-2.5 py-0.5 rounded-full border border-neonTeal/30 num-mono">
+              HDFC Bank API
+            </span>
+          </div>
+          <p class="text-xs text-mutedText">Welcome back, <span id="header-user-display" class="text-white font-semibold">Alex</span></p>
+        </div>
+      </div>
+
+      <!-- Navigation & Action Bar -->
+      <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+        <nav class="flex items-center gap-1 bg-surface p-1.5 rounded-xl border border-white/10 text-xs font-semibold">
+          <button onclick="switchTab('dashboard')" id="nav-dashboard" class="px-3.5 py-2 rounded-lg font-bold bg-neonTeal text-obsidian transition-all">
+            Dashboard
+          </button>
+          <button onclick="switchTab('surplus')" id="nav-surplus" class="px-3.5 py-2 rounded-lg text-mutedText hover:text-white transition-all">
+            Surplus Pay
+          </button>
+          <button onclick="switchTab('banklog')" id="nav-banklog" class="px-3.5 py-2 rounded-lg text-mutedText hover:text-white transition-all">
+            Bank Audit Log
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <!-- PAGE 2: CORE DASHBOARD PAGE -->
+    <div id="page-dashboard" class="app-page space-y-6">
+
+      <!-- TOP METRICS & CONFIGURATOR ROW -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+
+        <!-- Countdown Timer Widget -->
+        <div class="glass-card rounded-2xl p-5 flex flex-col justify-between border-l-4 border-l-neonTeal">
+          <div>
+            <div class="text-xs font-semibold text-mutedText mb-1 flex items-center justify-between">
+              <span>Next Auto-Debit Window</span>
+              <span class="pulse-dot inline-block w-2.5 h-2.5 rounded-full bg-neonTeal"></span>
+            </div>
+            <div class="text-sm font-bold text-white mb-3">Flexi Protocol Cycle #14</div>
+          </div>
+          <div class="grid grid-cols-4 gap-1.5 text-center bg-surface p-3 rounded-xl border border-white/5">
+            <div><div id="timer-days" class="text-lg font-black num-mono text-neonTeal">14</div><div class="text-[9px] text-mutedText font-semibold">DAYS</div></div>
+            <div><div id="timer-hours" class="text-lg font-black num-mono text-neonTeal">08</div><div class="text-[9px] text-mutedText font-semibold">HRS</div></div>
+            <div><div id="timer-mins" class="text-lg font-black num-mono text-neonTeal">42</div><div class="text-[9px] text-mutedText font-semibold">MIN</div></div>
+            <div><div id="timer-secs" class="text-lg font-black num-mono text-neonTeal">19</div><div class="text-[9px] text-mutedText font-semibold">SEC</div></div>
+          </div>
+        </div>
+
+        <!-- Loan Parameters Configurator -->
+        <div class="glass-card rounded-2xl p-5 md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
+          <div>
+            <label class="text-xs font-semibold text-mutedText block mb-1.5">Loan Principal (₹)</label>
+            <input type="number" id="input-principal" value="100000" step="5000" min="5000"
+              class="glass-input w-full rounded-xl px-3.5 py-2.5 text-sm font-bold text-white num-mono focus:outline-none">
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-mutedText block mb-1.5">Interest (% p.a.)</label>
+            <input type="number" id="input-rate" value="12" step="0.5" min="1"
+              class="glass-input w-full rounded-xl px-3.5 py-2.5 text-sm font-bold text-white num-mono focus:outline-none">
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-mutedText block mb-1.5">Tenure Term</label>
+            <select id="input-tenure" class="glass-input w-full rounded-xl px-3.5 py-2.5 text-sm font-bold text-white num-mono focus:outline-none">
+              <option value="6">6 Months</option>
+              <option value="12" selected>12 Months</option>
+              <option value="18">18 Months</option>
+              <option value="24">24 Months</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Income Persona Quick Presets -->
+      <div class="flex items-center gap-2.5 overflow-x-auto pb-1">
+        <span class="text-xs text-mutedText font-semibold mr-1 whitespace-nowrap">Volatility Scenarios:</span>
+        <button onclick="applyPersona('driver')" id="persona-btn-driver" class="text-xs font-semibold px-4 py-2 rounded-full border border-white/10 transition-all whitespace-nowrap">
+          🚗 Delivery Driver
+        </button>
+        <button onclick="applyPersona('seasonal')" id="persona-btn-seasonal" class="text-xs font-semibold px-4 py-2 rounded-full border border-white/10 transition-all whitespace-nowrap">
+          🌾 Seasonal Worker
+        </button>
+      </div>
+
+      <!-- HERO FEATURE: INTERACTIVE INCOME VOLATILITY CALCULATOR -->
+      <div class="glass-card rounded-3xl p-6 sm:p-8 relative overflow-hidden">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2">
+          <div class="text-xs font-bold uppercase tracking-wider text-mutedText">Simulated Verified Monthly Inflow</div>
+          <div class="text-xs text-neonTeal font-mono font-medium">Real-Time Open Banking Feed</div>
+        </div>
+
+        <div class="text-3xl sm:text-4xl font-black mb-4 num-mono text-white" id="display-income">₹20,000</div>
+
+        <!-- Interactive Range Slider -->
+        <input type="range" id="income-slider" min="0" max="60000" step="500" value="20000" class="w-full mb-6">
+
+        <div class="flex justify-between text-xs text-mutedText -mt-4 mb-6 font-mono">
+          <span>₹0 (Zero Inflow)</span>
+          <span id="display-slider-max">₹60,000</span>
+        </div>
+
+        <!-- Flexi Calculation Banner Outcome -->
+        <div class="rounded-2xl p-6 bg-surface border border-white/10 relative">
+          <div class="text-xs font-semibold text-mutedText mb-1">Calculated Repayment This Cycle</div>
+          <div class="text-4xl sm:text-5xl font-black num-mono text-neonTeal tracking-tight" id="display-payment">₹5,000</div>
+          <div class="text-xs text-mutedText mt-2" id="display-rationale">Scaled to 25% of verified monthly income stream.</div>
+          <div class="mt-3.5 min-h-[28px]" id="badge-container"></div>
+        </div>
+
+        <!-- Comparative Grid: Traditional vs FlexiRepay -->
+        <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="rounded-xl p-4 border border-crimsonRisk/30 bg-crimsonRisk/5">
+            <div class="text-xs font-semibold text-crimsonRisk mb-1">Traditional Fixed Bank EMI</div>
+            <div class="text-xl font-black num-mono text-crimsonRisk" id="display-traditional-emi">₹8,885</div>
+            <div class="text-[11px] text-crimsonRisk/80 mt-1">⚠️ Default penalties & Credit score penalty on shortfall</div>
+          </div>
+          <div class="rounded-xl p-4 border border-neonTeal/40 bg-neonTeal/10">
+            <div class="text-xs font-semibold text-neonTeal mb-1">FlexiRepay Protection Guarantee</div>
+            <div class="text-xl font-black num-mono text-neonTeal" id="display-flexi-emi">₹5,000</div>
+            <div class="text-[11px] text-neonTeal/90 mt-1">✓ Zero late-fee penalties • Credit score score fully protected</div>
+          </div>
+        </div>
+
+        <!-- Dynamic Dispatch Notice Box -->
+        <div class="mt-6 p-4 rounded-xl bg-surface border border-white/10">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-amberGold flex items-center gap-1.5">
+              <span>✉️</span> Auto-Dispatch REST Notice to <span id="notice-bank-label">HDFC Bank</span>
+            </span>
+            <span class="text-[10px] text-mutedText font-mono">STATUS: SIGNED & QUEUED</span>
+          </div>
+          <p id="notice-body-text" class="text-xs text-gray-300 font-mono leading-relaxed whitespace-pre-line">
+            Initializing dispatch payload...
+          </p>
+        </div>
+      </div>
+
+      <!-- INTERACTIVE TRAJECTORY MODEL (SVG CHART) -->
+      <div class="glass-card rounded-3xl p-6 relative">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
+          <div>
+            <div class="text-xs font-bold uppercase tracking-wider text-mutedText">6-Month Interactive Trajectory Model</div>
+            <p class="text-xs text-mutedText">Income flow vs Dynamic repayment curve</p>
+          </div>
+          <div class="flex items-center gap-4 text-xs font-semibold text-mutedText">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-neonTeal"></span>Income Line</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amberGold"></span>Scaled Repayment</span>
+          </div>
+        </div>
+
+        <div class="relative w-full overflow-hidden">
+          <svg id="svg-chart" viewBox="0 0 600 200" class="w-full h-auto overflow-visible"></svg>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- PAGE 3: SURPLUS PAY & DEBT-FREE ENGINE -->
+    <div id="page-surplus" class="app-page app-page-hidden space-y-6">
+      <div class="glass-card rounded-3xl p-6 sm:p-8 border-l-4 border-l-amberGold">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-white">Lump-Sum Debt-Free Engine</h2>
+            <p class="text-xs text-mutedText">Apply festival bonuses or excess earnings to shorten your overall tenure.</p>
+          </div>
+          <span class="text-3xl">🚀</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
+          <div>
+            <label class="text-xs font-semibold text-mutedText block mb-1.5">Remaining Principal Balance</label>
+            <div class="text-2xl font-black num-mono text-white" id="surplus-current-balance">₹1,00,000</div>
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-mutedText block mb-1.5">Enter Lump-Sum Extra Pay (₹)</label>
+            <input type="number" id="surplus-extra-input" value="25000" step="1000" min="1000"
+              class="glass-input w-full rounded-xl px-4 py-3 text-lg font-bold text-amberGold num-mono focus:outline-none">
+          </div>
+        </div>
+
+        <button onclick="recalculateSurplus()" class="w-full bg-gradient-to-r from-amberGold to-amber-600 text-obsidian font-black text-sm py-3.5 rounded-xl hover:opacity-95 transition-all shadow-lg shadow-amberGold/15 active:scale-[0.99]">
+          Calculate Accelerated Tenure →
+        </button>
+      </div>
+
+      <!-- Surplus Outcomes Summary Card -->
+      <div class="glass-card rounded-3xl p-6 sm:p-8">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-mutedText mb-4">Accelerated Payoff Metrics</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+          <div class="p-4 rounded-2xl bg-surface border border-white/5">
+            <div class="text-xs text-mutedText mb-1">Tenure Shortened By</div>
+            <div class="text-2xl font-black text-neonTeal num-mono" id="surplus-months-saved">3 Months</div>
+            <div class="text-[10px] text-neonTeal/80 mt-1">Debt-Free Sooner</div>
+          </div>
+          <div class="p-4 rounded-2xl bg-surface border border-white/5">
+            <div class="text-xs text-mutedText mb-1">Total Interest Saved</div>
+            <div class="text-2xl font-black text-amberGold num-mono" id="surplus-interest-saved">₹3,250</div>
+            <div class="text-[10px] text-amberGold/80 mt-1">Direct Interest Savings</div>
+          </div>
+          <div class="p-4 rounded-2xl bg-surface border border-white/5">
+            <div class="text-xs text-mutedText mb-1">New Principal Loan Balance</div>
+            <div class="text-2xl font-black text-white num-mono" id="surplus-new-balance">₹75,000</div>
+            <div class="text-[10px] text-mutedText mt-1">Adjusted Principal</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 4: BANK AUDIT & DISPATCH LOG -->
+    <div id="page-banklog" class="app-page app-page-hidden space-y-6">
+      <div class="glass-card rounded-3xl p-6 sm:p-8">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 class="text-xl font-extrabold text-white">Bank Communication Audit Log</h2>
+            <p class="text-xs text-mutedText">Live REST API dispatch messages logged for <span id="audit-bank-name" class="text-white font-bold">HDFC Bank</span></p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs bg-emerald-950/80 text-emerald-400 px-3 py-1 rounded-full border border-emerald-800 font-mono flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> REST ACTIVE
+            </span>
+            <button onclick="clearAuditLogs()" class="text-xs text-mutedText hover:text-white px-3 py-1 rounded-lg border border-white/10">
+              Clear Logs
+            </button>
+          </div>
+        </div>
+
+        <div class="space-y-3 max-h-[550px] overflow-y-auto pr-1" id="audit-log-container">
+          <!-- Dynamically Appended API Logs -->
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SCRIPT LOGIC: SPA CONTROLLER & CALCULATIONS -->
+  <script>
+    // GLOBAL STATE
+    let activeBank = 'HDFC';
+    let currentUser = 'Alex';
+    let currentPersona = 'driver';
+
+    const FLEX_SCALE_RATE = 0.25;
+
+    const personas = {
+      driver: { label: "🚗 Delivery Driver", multipliers: [1.5, 0.85, 0.4, 1.3, 1.7], defaultRatio: 1.0 },
+      seasonal: { label: "🌾 Seasonal Worker", multipliers: [2.2, 1.8, 0.5, 0.3, 1.0], defaultRatio: 0.25 }
+    };
+
+    const formatINR = (val) => '₹' + Math.round(val).toLocaleString('en-IN');
+
+    // TOAST SYSTEM
+    function triggerToast(title, msg, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `glass-card p-4 rounded-2xl border ${
+        type === 'success' ? 'border-neonTeal bg-neonTeal/10' :
+        type === 'warning' ? 'border-amberGold bg-amberGold/10' : 'border-white/10'
+      } shadow-2xl flex items-start justify-between gap-3 pointer-events-auto transition-all duration-300`;
+
+      toast.innerHTML = `
+        <div class="flex items-start gap-2.5">
+          <span class="text-base">${type === 'success' ? '⚡' : type === 'warning' ? '⚠️' : 'ℹ️'}</span>
+          <div>
+            <div class="text-xs font-bold text-white">${title}</div>
+            <div class="text-[11px] text-mutedText mt-0.5">${msg}</div>
+          </div>
+        </div>
+        <button onclick="this.parentElement.remove()" class="text-mutedText hover:text-white text-xs">✕</button>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    // LOGIN & PORTAL SELECTION
+    function selectBankPortal(bank) {
+      activeBank = bank;
+      const hdfcBtn = document.getElementById('portal-btn-hdfc');
+      const sbiBtn = document.getElementById('portal-btn-sbi');
+
+      if (bank === 'HDFC') {
+        hdfcBtn.className = "py-3 px-3 rounded-xl border border-neonTeal bg-neonTeal/10 text-xs font-bold text-neonTeal text-center transition-all shadow-sm";
+        sbiBtn.className = "py-3 px-3 rounded-xl border border-white/10 bg-transparent text-xs font-bold text-mutedText text-center transition-all hover:border-white/20";
+      } else {
+        sbiBtn.className = "py-3 px-3 rounded-xl border border-neonTeal bg-neonTeal/10 text-xs font-bold text-neonTeal text-center transition-all shadow-sm";
+        hdfcBtn.className = "py-3 px-3 rounded-xl border border-white/10 bg-transparent text-xs font-bold text-mutedText text-center transition-all hover:border-white/20";
+      }
+      document.getElementById('header-bank-badge').textContent = bank + ' Bank API';
+      document.getElementById('audit-bank-name').textContent = bank + ' Bank';
+      updateEngine();
+    }
+
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+      currentUser = document.getElementById('login-username').value.trim() || 'Alex';
+      document.getElementById('header-user-display').textContent = currentUser;
+
+      const loginPage = document.getElementById('page-login');
+      loginPage.style.opacity = '0';
+      loginPage.style.transform = 'scale(0.98)';
+      setTimeout(() => {
+        loginPage.classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
+        updateEngine();
+        triggerToast('Portal Unlocked', `Session initialized for ${currentUser} with ${activeBank} Bank.`, 'success');
+      }, 350);
+    }
+
+    // SPA TAB NAVIGATION
+    function switchTab(tabKey) {
+      ['dashboard', 'surplus', 'banklog'].forEach(t => {
+        const page = document.getElementById('page-' + t);
+        const btn = document.getElementById('nav-' + t);
+        if (t === tabKey) {
+          page.classList.remove('app-page-hidden');
+          btn.className = "px-3.5 py-2 rounded-lg font-bold bg-neonTeal text-obsidian transition-all shadow-sm";
+        } else {
+          page.classList.add('app-page-hidden');
+          btn.className = "px-3.5 py-2 rounded-lg text-mutedText hover:text-white transition-all";
+        }
+      });
+      if (tabKey === 'surplus') recalculateSurplus();
+    }
+
+    // CORE MATHEMATICAL ENGINE
+    function calculateBaselineEMI() {
+      const P = Math.max(1000, parseFloat(document.getElementById('input-principal').value) || 100000);
+      const annualRate = Math.max(0.1, parseFloat(document.getElementById('input-rate').value) || 12);
+      const N = parseInt(document.getElementById('input-tenure').value) || 12;
+
+      const r = (annualRate / 12) / 100;
+      const emi = (P * r * Math.pow(1 + r, N)) / (Math.pow(1 + r, N) - 1);
+      return Math.round(emi);
+    }
+
+    function computeDynamicRepayment(income) {
+      const baseEMI = calculateBaselineEMI();
+      if (income <= 0) return 0;
+      const minPaymentFloor = baseEMI * 0.2;
+      const scaled25Pct = income * FLEX_SCALE_RATE;
+      return Math.max(minPaymentFloor, Math.min(scaled25Pct, baseEMI));
+    }
+
+    function applyPersona(key) {
+      currentPersona = key;
+      const baseEMI = calculateBaselineEMI();
+      const targetIncome = (baseEMI / FLEX_SCALE_RATE) * personas[key].defaultRatio;
+      document.getElementById('income-slider').value = Math.round(targetIncome);
+
+      ['driver', 'seasonal'].forEach(k => {
+        const btn = document.getElementById('persona-btn-' + k);
+        if (k === key) {
+          btn.className = "text-xs font-semibold px-4 py-2 rounded-full border border-neonTeal bg-neonTeal/10 text-neonTeal transition-all shadow-sm";
+        } else {
+          btn.className = "text-xs font-semibold px-4 py-2 rounded-full border border-white/10 bg-transparent text-mutedText hover:text-white transition-all";
+        }
+      });
+      updateEngine();
+    }
+
+    // MAIN REACTIVE DOM UPDATE ROUTINE
+    function updateEngine() {
+      const baseEMI = calculateBaselineEMI();
+      const slider = document.getElementById('income-slider');
+
+      const maxIncomeRange = Math.round((baseEMI / FLEX_SCALE_RATE) * 2.5 / 1000) * 1000;
+      slider.max = maxIncomeRange;
+      document.getElementById('display-slider-max').textContent = formatINR(maxIncomeRange);
+
+      const income = parseInt(slider.value);
+      const fillPct = (income / slider.max) * 100;
+      slider.style.setProperty('--slider-fill', fillPct + '%');
+
+      const payment = computeDynamicRepayment(income);
+      const minFloor = baseEMI * 0.2;
+
+      document.getElementById('display-income').textContent = formatINR(income);
+      document.getElementById('display-payment').textContent = formatINR(payment);
+      document.getElementById('display-flexi-emi').textContent = formatINR(payment);
+      document.getElementById('display-traditional-emi').textContent = formatINR(baseEMI);
+
+      const rationaleEl = document.getElementById('display-rationale');
+      const badgeContainer = document.getElementById('badge-container');
+      const bankNoticeLabel = document.getElementById('notice-bank-label');
+      const noticeBodyText = document.getElementById('notice-body-text');
+
+      bankNoticeLabel.textContent = activeBank + ' Bank';
+
+      let rationale = '';
+      let badgeHtml = '';
+      let noticeMessage = '';
+      let logTitle = '';
+      let statusCode = '200 OK';
+
+      if (income <= 0) {
+        rationale = "Zero monthly income detected — auto-debit paused with zero late fees.";
+        badgeHtml = `<span class="badge-elastic inline-flex items-center gap-1.5 bg-crimsonRisk/20 border border-crimsonRisk/40 text-crimsonRisk text-xs font-bold px-3.5 py-1 rounded-full">🛑 Payment Paused — Zero Late Fees</span>`;
+        noticeMessage = `[APOLOGY & GUARANTEE NOTICE SENT TO ${activeBank.toUpperCase()}]\n"Notice: Borrower ${currentUser} experienced a zero-income volatility period this cycle. In accordance with FlexiRepay policy, repayment is completely paused. GUARANTEE: Zero late-fee penalties applied."`;
+        logTitle = "ZERO-INCOME PAUSE DISPATCHED";
+        statusCode = "202 ACCEPTED (PAUSED)";
+      } else if (payment <= minFloor + 5) {
+        rationale = "Low income detected — repayment scaled to 20% safety floor to protect basic living expenses.";
+        badgeHtml = `<span class="badge-elastic inline-flex items-center gap-1.5 bg-neonTeal/20 border border-neonTeal/40 text-neonTeal text-xs font-bold px-3.5 py-1 rounded-full">✓ 20% Safety Floor Active</span>`;
+        noticeMessage = `[LOW-INCOME ADVISORY SENT TO ${activeBank.toUpperCase()}]\n"Borrower ${currentUser}'s verified monthly income decreased to ${formatINR(income)}. Repayment adjusted down to 20% floor (${formatINR(payment)}) to safeguard basic liquidity."`;
+        logTitle = "20% SAFETY FLOOR DISPATCHED";
+      } else if (payment >= baseEMI - 5) {
+        rationale = "Optimal income month — repayment capped at baseline EMI.";
+        badgeHtml = `<span class="badge-elastic inline-flex items-center gap-1.5 bg-amberGold/20 border border-amberGold/40 text-amberGold text-xs font-bold px-3.5 py-1 rounded-full">⚡ Full Baseline EMI Paid</span>`;
+        noticeMessage = `[STANDARD CLEARANCE SENT TO ${activeBank.toUpperCase()}]\n"Borrower ${currentUser} reached threshold income (${formatINR(income)}). Standard EMI clearance of ${formatINR(payment)} successfully requested."`;
+        logTitle = "STANDARD EMI DISPATCHED";
+      } else {
+        rationale = "Repayment scaled dynamically to 25% of verified monthly inflow.";
+        badgeHtml = `<span class="badge-elastic inline-flex items-center gap-1.5 bg-neonTeal/15 border border-neonTeal/30 text-neonTeal text-xs font-bold px-3.5 py-1 rounded-full">✦ 25% Proportional Scaling</span>`;
+        noticeMessage = `[DYNAMIC SCALE DISPATCH SENT TO ${activeBank.toUpperCase()}]\n"Borrower ${currentUser}'s repayment dynamically scaled to ${formatINR(payment)} based on 25% verified cash flow."`;
+        logTitle = "DYNAMIC SCALE DISPATCHED";
+      }
+
+      rationaleEl.textContent = rationale;
+      badgeContainer.innerHTML = badgeHtml;
+      noticeBodyText.textContent = noticeMessage;
+
+      renderTrajectoryChart(income, payment, baseEMI);
+      appendAuditLog(logTitle, noticeMessage, statusCode);
+    }
+
+    // SVG TRAJECTORY CHART GENERATOR
+    function renderTrajectoryChart(currentIncome, currentPayment, baseEMI) {
+      const baseInc = baseEMI / FLEX_SCALE_RATE;
+      const multipliers = personas[currentPersona].multipliers;
+      const historyIncomes = multipliers.map(m => Math.round(baseInc * m));
+      const incomes = [...historyIncomes, currentIncome];
+      const payments = incomes.map(computeDynamicRepayment);
+
+      const w = 600, h = 200, padL = 40, padR = 20, padT = 20, padB = 30;
+      const maxVal = Math.max(...incomes, baseEMI, 1000) * 1.15;
+
+      const x = (i) => padL + (i / (incomes.length - 1)) * (w - padL - padR);
+      const y = (v) => padT + (1 - v / maxVal) * (h - padT - padB);
+
+      const makePath = (arr) => arr.map((v, i) => (i === 0 ? 'M' : 'L') + x(i).toFixed(1) + ' ' + y(v).toFixed(1)).join(' ');
+
+      const months = ['M-5', 'M-4', 'M-3', 'M-2', 'M-1', 'Current'];
+      let gridLines = '';
+      for (let g = 0; g <= 3; g++) {
+        const gv = maxVal * g / 3;
+        gridLines += `<line x1="${padL}" y1="${y(gv)}" x2="${w-padR}" y2="${y(gv)}" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="4 4"/>`;
+      }
+
+      let labels = '';
+      months.forEach((m, i) => {
+        labels += `<text x="${x(i)}" y="${h-8}" font-size="10" fill="#8A9591" text-anchor="middle" font-family="JetBrains Mono">${m}</text>`;
+      });
+
+      let nodes = '';
+      incomes.forEach((inc, i) => {
+        const rep = payments[i];
+        nodes += `
+          <circle cx="${x(i)}" cy="${y(inc)}" r="4" fill="#34D8B8"/>
+          <circle cx="${x(i)}" cy="${y(rep)}" r="4" fill="#F5B75C"/>
+        `;
+      });
+
+      const currentX = x(incomes.length - 1);
+      const currentY = y(currentIncome);
+
+      const svgContent = `
+        ${gridLines}
+        <path d="${makePath(incomes)}" fill="none" stroke="#34D8B8" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+        <path d="${makePath(payments)}" fill="none" stroke="#F5B75C" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+        ${nodes}
+        <circle class="pulse-dot" cx="${currentX}" cy="${currentY}" r="7" fill="#34D8B8"/>
+        ${labels}
+      `;
+      document.getElementById('svg-chart').innerHTML = svgContent;
+    }
+
+    // SURPLUS ENGINE LOGIC
+    function recalculateSurplus() {
+      const totalBalance = parseFloat(document.getElementById('input-principal').value) || 100000;
+      const extraPay = parseFloat(document.getElementById('surplus-extra-input').value) || 0;
+      const baseEMI = calculateBaselineEMI();
+      const annualRate = parseFloat(document.getElementById('input-rate').value) || 12;
+
+      document.getElementById('surplus-current-balance').textContent = formatINR(totalBalance);
+
+      const newBalance = Math.max(0, totalBalance - extraPay);
+      document.getElementById('surplus-new-balance').textContent = formatINR(newBalance);
+
+      const monthsSaved = Math.min(18, Math.round((extraPay / baseEMI) * 1.12));
+      const interestSaved = Math.round(extraPay * (annualRate / 100) * 1.25);
+
+      document.getElementById('surplus-months-saved').textContent = monthsSaved + ' Months';
+      document.getElementById('surplus-interest-saved').textContent = formatINR(interestSaved);
+
+      triggerToast('Surplus Recalculated', `Lump-sum extra pay of ${formatINR(extraPay)} processed.`, 'success');
+    }
+
+    // AUDIT LOG SYSTEM
+    function appendAuditLog(title, bodyText, status = '200 OK') {
+      const container = document.getElementById('audit-log-container');
+      const timeStr = new Date().toLocaleTimeString();
+
+      const logCard = document.createElement('div');
+      logCard.className = "p-4 rounded-xl bg-surface border border-white/10 font-mono text-xs space-y-2 hover:border-neonTeal/30 transition-all";
+
+      logCard.innerHTML = `
+        <div class="flex items-center justify-between">
+          <span class="text-amberGold font-bold flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-amberGold"></span>
+            [${timeStr}] ${title}
+          </span>
+          <span class="text-[10px] text-neonTeal bg-neonTeal/10 px-2.5 py-0.5 rounded border border-neonTeal/30">${status}</span>
+        </div>
+        <p class="text-gray-300 text-[11px] leading-relaxed whitespace-pre-line">${bodyText}</p>
+        <div class="pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-mutedText">
+          <span>ENDPOINT: /api/v2/flexi-dispatch</span>
+          <span>PAYLOAD: SIGNED SHA-256</span>
+        </div>
+      `;
+      container.insertBefore(logCard, container.firstChild);
+    }
+
+    function clearAuditLogs() {
+      document.getElementById('audit-log-container').innerHTML = '<div class="text-xs text-mutedText text-center py-6 font-mono">Logs cleared.</div>';
+    }
+
+    // TICKING TIMER SYSTEM
+    function startCountdownTimer() {
+      let totalSeconds = 14 * 86400 + 8 * 3600 + 42 * 60 + 19;
+      setInterval(() => {
+        totalSeconds--;
+        if (totalSeconds < 0) totalSeconds = 14 * 86400;
+
+        const d = Math.floor(totalSeconds / 86400);
+        const h = Math.floor((totalSeconds % 86400) / 3600);
+        const m = Math.floor((totalSeconds % 3600) / 60);
+        const s = totalSeconds % 60;
+
+        document.getElementById('timer-days').textContent = String(d).padStart(2, '0');
+        document.getElementById('timer-hours').textContent = String(h).padStart(2, '0');
+        document.getElementById('timer-mins').textContent = String(m).padStart(2, '0');
+        document.getElementById('timer-secs').textContent = String(s).padStart(2, '0');
+      }, 1000);
+    }
+
+    // BIND INPUT LISTENERS
+    document.getElementById('income-slider').addEventListener('input', updateEngine);
+    document.getElementById('input-principal').addEventListener('input', updateEngine);
+    document.getElementById('input-rate').addEventListener('input', updateEngine);
+    document.getElementById('input-tenure').addEventListener('change', updateEngine);
+
+    // INITIALIZE APP
+    applyPersona('driver');
+    startCountdownTimer();
+  </script>
+</body>
+</html>
